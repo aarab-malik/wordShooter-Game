@@ -28,7 +28,6 @@ int dictionarysize = 369646;
 // 20,30,30
 const int bradius = 30; // ball radius in pixels...
 int width = 930, height = 660;
-float gradient = 0;
 int posX = (width / 2), posY = 10, cellPosX = 0, cellPosY = 0;
 int clickPosX = 0, clickPosY = 0, cellClickPosX = 0, cellClickPosY = 0;
 int byoffset = bradius;
@@ -283,15 +282,6 @@ void DrawShooter(int sx, int sy, int cwidth = 60, int cheight = 60)
 /*
  * Main Canvas drawing function.
  * */
-
-
-float findGradient(int clickPosX, int clickPosY)
-{
-	float fClickPosX = clickPosX, fClickPosY = clickPosY;	
-	float grad = ((fClickPosY - 10)) / (fClickPosX - (width / 2) );
-	cout << grad;
-	return grad;
-}
 
 void DisplayFunction()
 {
