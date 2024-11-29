@@ -288,7 +288,7 @@ void DrawShooter(int sx, int sy, int cwidth = 60, int cheight = 60)
 float findGradient(int clickPosX, int clickPosY)
 {
 	float fClickPosX = clickPosX, fClickPosY = clickPosY;	
-	float grad = ((fClickPosY - 10)) / (fClickPosX - (width / 2));
+	float grad = ((fClickPosY - 10)) / (fClickPosX - (width / 2) );
 	cout << grad;
 	return grad;
 }
@@ -317,10 +317,17 @@ void DisplayFunction()
 	if (leftClicked == true)
 	{
 		cout << "ClickPosX: " << clickPosX << " ClickPosY: " << clickPosY << " posX: " << posX << " PosY: " << posY << endl;
-		if (posX <= clickPosX)
-			posX = posX + gradient * 10;
-		if (posY <= clickPosY)
-			posY = posY + gradient * 10;
+
+		//dividing by FPS makes it so that the change in position is split up frame-by-frame to keep it smooth
+		posX = (posX + (clickPosX/FPS));
+		posY = (posY + (clickPosY/FPS));
+
+		//boundary checks, negating it makes it so that the ball bounces off the wall as the value being "added" changes direction (subtracting the change moves to left, adding the change moves to right, behavior must change at boundaries)
+		if ((posX == 0) || (posX == (width - 1)))
+		{
+			clickPosX = -(clickPosX);
+		}
+
 	}
 
 	DrawString(40, height - 20, width, height + 5, "Score " + Num2Str(score), colors[BLUE_VIOLET]);
@@ -404,13 +411,14 @@ void MouseClicked(int button, int state, int x, int y)
 
 	if (button == GLUT_LEFT_BUTTON) // dealing only with left button
 	{
+		//x and y are calculated w.r.t the top left of the canvas, so these need to be converted to be w.r.t bottom left to keep them in line with the sketch canvas pixel coordinates
 		if (state == GLUT_UP)
 		{
 			leftClicked = true;
-			clickPosX = (x - 30);
+			//(subtracting (with / 2) so that clickPosX is w.r.t the ball in the middle of the screen, -30 to compensate for the ball radius)
+			clickPosX = (x - (width / 2) - 30);
+			//subtracted height to make the clickPosY w.r.t the bottom of the screen, -30 to compenste for the ball radius
 			clickPosY = (height - y - 30);
-			gradient = findGradient(clickPosX, clickPosY);
-			cout << "gradient: " << gradient;
 		}
 	}
 	else if (button == GLUT_RIGHT_BUTTON) // dealing with right button
