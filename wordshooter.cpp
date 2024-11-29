@@ -15,6 +15,9 @@
 #include <cmath>
 #include <fstream>
 #include "util.h"
+#include <AL/al.h>
+#include <AL/alc.h>
+#include <AL/alut.h>
 using namespace std;
 #define MAX(A, B) ((A) > (B) ? (A) : (B)) // defining single line functions....
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
@@ -28,10 +31,12 @@ int dictionarysize = 369646;
 // 20,30,30
 const int bradius = 30; // ball radius in pixels...
 int width = 930, height = 660;
+int currentChar = 0, nextChar = 0;
+int remainingTime = 120, framesDrawn = 0;
 int posX = (width / 2), posY = 10, cellPosX = 0, cellPosY = 0;
 int clickPosX = 0, clickPosY = 0, cellClickPosX = 0, cellClickPosY = 0;
 int byoffset = bradius;
-bool leftClicked = false;
+bool leftClicked = false, gameOver = false;
 int nxcells = (width - bradius) / (2 * bradius);
 int nycells = (height - byoffset /*- bradius*/) / (2 * bradius); 
 int nfrows = 2; // initially number of full rows //
@@ -78,6 +83,9 @@ string tnames[] = {"a.bmp", "b.bmp", "c.bmp", "d.bmp", "e.bmp", "f.bmp", "g.bmp"
 				   "x.bmp", "y.bmp", "z.bmp"};
 GLuint mtid[nalphabets];
 int awidth = 60, aheight = 60; // 60x60 pixels cookies...
+
+ALuint source;
+ALuint buffer;
 
 // USED THIS CODE FOR WRITING THE IMAGES TO .bin FILE
 void RegisterTextures_Write()
@@ -226,6 +234,8 @@ int GetAlphabet()
 	return GetRandInRange(1, 26);
 }
 
+
+
 void Pixels2Cell(int px, int py, int & cx, int &cy) {
 	cx = ((px - bradius) / awidth) ;
 	cy = ((py - byoffset) / aheight);
@@ -313,16 +323,17 @@ void DisplayFunction()
 		posY = (posY + (clickPosY/FPS));
 
 		//boundary checks, negating it makes it so that the ball bounces off the wall as the value being "added" changes direction (subtracting the change moves to left, adding the change moves to right, behavior must change at boundaries)
-		if ((posX == 0) || (posX == (width - 1)))
+		if ((posX <= 0) || (posX >= (width - 1)))
 		{
 			clickPosX = -(clickPosX);
 		}
 
 	}
 
-	DrawString(40, height - 20, width, height + 5, "Score " + Num2Str(score), colors[BLUE_VIOLET]);
-	DrawString(width / 2 - 30, height - 25, width, height,
-			   "Time Left:" + Num2Str(2) + " secs", colors[RED]);
+	DrawString(5, height - 20, width, height + 5, "Score " + Num2Str(score), colors[BLUE_VIOLET]);
+	DrawString(width / 2 - 55, height - 25, width, height, "Time Left:" + Num2Str(remainingTime) + " secs", colors[RED]);
+	DrawString(width - 225, height - 20, width, height + 5, "Aarab Malik 24i-2552", colors[BLUE_VIOLET]);
+			   
 
 	// #----------------- Write your code till here ----------------------------#
 	// DO NOT MODIFY THESE LINES
@@ -438,8 +449,19 @@ void PrintableKeys(unsigned char key, int x, int y)
  * */
 void Timer(int m)
 {
+	if (gameOver == false)
+	{
+		framesDrawn++;
+		if ((framesDrawn % FPS) == 0)
+		{	
+			remainingTime--;
+			if (remainingTime == 0)
+				gameOver = true;
+		}
+	}
 
 	glutPostRedisplay();
+
 	glutTimerFunc(1000.0 / FPS, Timer, 0);
 }
 
@@ -448,6 +470,18 @@ void deleteBoard(int ** &board) {
 		delete board[i];
 	}
 	delete[] board;
+}
+
+void InitMusic() {
+    alutInit(0, NULL);
+    
+    buffer = alutCreateBufferFromFile("backgroundMusic.wav");
+    
+    alGenSources(1, &source);
+    alSourcei(source, AL_BUFFER, buffer);
+    alSourcei(source, AL_LOOPING, AL_TRUE);
+    
+    alSourcePlay(source);
 }
 
 /*
@@ -464,9 +498,9 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < 5; ++i)
 		cout << " word " << i << " =" << dictionary[i] << endl;
 
-	defineBoard(board);
-
 	// Write your code here for filling the canvas with different Alphabets. You can use the Getalphabet function for getting the random alphabets
+	defineBoard(board);
+	InitMusic();
 
 	glutInit(&argc, argv);						  // initialize the graphics library...
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA); // we will be using color display mode
@@ -492,6 +526,10 @@ int main(int argc, char *argv[])
 
 	glutMainLoop();
 
+	// Add cleanup before return
+    alDeleteSources(1, &source);
+    alDeleteBuffers(1, &buffer);
+    alutExit();
 	deleteBoard(board);
 	return 1;
 }
