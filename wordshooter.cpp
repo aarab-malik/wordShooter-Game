@@ -234,8 +234,6 @@ int GetAlphabet()
 	return GetRandInRange(1, 26);
 }
 
-
-
 void Pixels2Cell(int px, int py, int & cx, int &cy) {
 	cx = ((px - bradius) / awidth) ;
 	cy = ((py - byoffset) / aheight);
@@ -323,7 +321,7 @@ void DisplayFunction()
 		posY = (posY + (clickPosY/FPS));
 
 		//boundary checks, negating it makes it so that the ball bounces off the wall as the value being "added" changes direction (subtracting the change moves to left, adding the change moves to right, behavior must change at boundaries)
-		if ((posX <= 0) || (posX >= (width - 1)))
+		if ((posX <= 0) || (posX >= (width - 1 - 60)))
 		{
 			clickPosX = -(clickPosX);
 		}
@@ -413,7 +411,7 @@ void MouseClicked(int button, int state, int x, int y)
 	if (button == GLUT_LEFT_BUTTON) // dealing only with left button
 	{
 		//x and y are calculated w.r.t the top left of the canvas, so these need to be converted to be w.r.t bottom left to keep them in line with the sketch canvas pixel coordinates
-		if (state == GLUT_UP)
+		if ((state == GLUT_UP) && (leftClicked != true))
 		{
 			leftClicked = true;
 			//(subtracting (with / 2) so that clickPosX is w.r.t the ball in the middle of the screen, -30 to compensate for the ball radius)
