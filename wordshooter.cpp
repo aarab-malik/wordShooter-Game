@@ -33,8 +33,8 @@ const int bradius = 30; // ball radius in pixels...
 int width = 930, height = 660;
 int currentChar = 0, nextChar = 0;
 int remainingTime = 120, framesDrawn = 0;
-int posX = (width / 2), posY = 10, cellPosX = 0, cellPosY = 0;
-int clickPosX = 0, clickPosY = 0, cellClickPosX = 0, cellClickPosY = 0;
+int posX = (width / 2), posY = 10, cellPosX = 0, cellPosY = 0, checkPosX = 0, checkPosY = 0, checkCellX = 0, checkCellY = 0;
+int clickPosX = 0, clickPosY = 0;
 int byoffset = bradius;
 bool leftClicked = false, gameOver = false;
 int nxcells = (width - bradius) / (2 * bradius);
@@ -287,7 +287,7 @@ void DisplayFunction()
 	glClear(GL_COLOR_BUFFER_BIT);								 // Update the colors
 
 	// write your drawing commands here or call your drawing functions...
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < nycells; i++)
 	{
 		for (int j = 0; j < nxcells; j++)
 		{
@@ -302,7 +302,9 @@ void DisplayFunction()
 
 	if (leftClicked == true)
 	{
-		if (posY >= (height - 20 - (filledRows * 60)))
+		Pixels2Cell(posX, posY, checkCellX, checkCellY);
+
+		if (board[checkCellY - 1][checkCellX] != -1)
 		{
 			leftClicked = false;
 			Pixels2Cell(posX, posY, xCell, yCell);
