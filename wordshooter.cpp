@@ -287,55 +287,72 @@ void DisplayFunction()
 	glClear(GL_COLOR_BUFFER_BIT);								 // Update the colors
 
 	// write your drawing commands here or call your drawing functions...
-	for (int i = 0; i < nycells; i++)
+	
+	if (gameOver == false)
 	{
-		for (int j = 0; j < nxcells; j++)
+		for (int i = 0; i < nycells; i++)
 		{
-			if (board[i][j] != -1)
-				DrawAlphabet((alphabets)board[i][j], (10 + (j * awidth)), (570 - (i * aheight)), awidth, aheight);
-		}
-	}
-
-	DrawAlphabet((alphabets)currentChar, posX, posY, awidth, aheight);
-	DrawAlphabet((alphabets)nextChar, (width - (width / 8)), 10 , awidth, aheight);
-
-
-	if (leftClicked == true)
-	{
-		Pixels2Cell(posX, posY, checkCellX, checkCellY);
-
-		if (board[checkCellY - 1][checkCellX] != -1)
-		{
-			leftClicked = false;
-			Pixels2Cell(posX, posY, xCell, yCell);
-			cout << "xCell: " << xCell << " yCell: " << yCell << endl;
-			board[yCell][xCell] = currentChar;
-			currentChar = nextChar;
-			nextChar = GetAlphabet();
-			posX = (width / 2);
-			posY = 10;
-		}
-		else
-		{
-			cout << "ClickPosX: " << clickPosX << " ClickPosY: " << clickPosY << " posX: " << posX << " PosY: " << posY << endl;
-
-			//dividing by FPS makes it so that the change in position is split up frame-by-frame to keep it smooth
-			posX = (posX + (clickPosX/FPS));
-			posY = (posY + (clickPosY/FPS));
-
-			//boundary checks, negating it makes it so that the ball bounces off the wall as the value being "added" changes direction (subtracting the change moves to left, adding the change moves to right, behavior must change at boundaries)
-			if ((posX <= 0) || (posX >= (width - 1 - 60)))
-				clickPosX = -(clickPosX);
+			for (int j = 0; j < nxcells; j++)
+			{
+				if (board[i][j] != -1)
+					DrawAlphabet((alphabets)board[i][j], (10 + (j * awidth)), (570 - (i * aheight)), awidth, aheight);
+			}
 		}
 
+		DrawAlphabet((alphabets)currentChar, posX, posY, awidth, aheight);
+		DrawAlphabet((alphabets)nextChar, (width - (width / 8)), 10 , awidth, aheight);
 
-	}
 
-	DrawString(5, height - 20, width, height + 5, "Score " + Num2Str(score), colors[BLUE_VIOLET]);
-	DrawString((width / 2) - 85, height - 25, width, height, "Time Left:" + Num2Str(remainingTime) + " secs", colors[RED]);
-	DrawString(width - 225, height - 20, width, height + 5, "Aarab Malik 24i-2552", colors[BLUE_VIOLET]);
+		if (leftClicked == true)
+		{
+			Pixels2Cell(posX, posY, checkCellX, checkCellY);
+
+			if (board[checkCellY - 1][checkCellX] != -1)
+			{
+				leftClicked = false;
+				Pixels2Cell(posX, posY, xCell, yCell);
+				cout << "xCell: " << xCell << " yCell: " << yCell << endl;
+				board[yCell][xCell] = currentChar;
+				currentChar = nextChar;
+				nextChar = GetAlphabet();
+				posX = (width / 2);
+				posY = 10;
+			}
+			else
+			{
+				cout << "ClickPosX: " << clickPosX << " ClickPosY: " << clickPosY << " posX: " << posX << " PosY: " << posY << endl;
+
+				//dividing by FPS makes it so that the change in position is split up frame-by-frame to keep it smooth
+				posX = (posX + (clickPosX/FPS));
+				posY = (posY + (clickPosY/FPS));
+
+				//boundary checks, negating it makes it so that the ball bounces off the wall as the value being "added" changes direction (subtracting the change moves to left, adding the change moves to right, behavior must change at boundaries)
+				if ((posX <= 0) || (posX >= (width - 1 - 60)))
+					clickPosX = -(clickPosX);
+			}
+
+
+		}
+
+		DrawString(5, height - 20, width, height + 5, "Score " + Num2Str(score), colors[BLUE_VIOLET]);
+		DrawString((width / 2) - 85, height - 25, width, height, "Time Left:" + Num2Str(remainingTime) + " secs", colors[RED]);
+		DrawString(width - 225, height - 20, width, height + 5, "Aarab Malik 24i-2552", colors[BLUE_VIOLET]);
 			   
+	}
+	else
+	{
+		DrawAlphabet((alphabets)6, (width / 2) - 100, (height / 2) + 80, awidth, aheight);
+		DrawAlphabet((alphabets)0, (width / 2) - 40, (height / 2) + 80, awidth, aheight);
+		DrawAlphabet((alphabets)12, (width / 2) + 20, (height / 2) + 80, awidth, aheight);
+		DrawAlphabet((alphabets)4, (width / 2) + 80, (height / 2) + 80, awidth, aheight);
 
+		DrawAlphabet((alphabets)14, (width / 2) - 100, (height / 2) + 20, awidth, aheight);
+		DrawAlphabet((alphabets)21, (width / 2) - 40, (height / 2) + 20, awidth, aheight);
+		DrawAlphabet((alphabets)4, (width / 2) + 20, (height / 2) + 20, awidth, aheight);
+		DrawAlphabet((alphabets)17, (width / 2) + 80, (height / 2) + 20, awidth, aheight);
+
+		DrawString((width / 2) - 20, (height / 2) - 20, width, height + 5, "Score: " + Num2Str(score), colors[BLUE_VIOLET]);
+	}
 	// #----------------- Write your code till here ----------------------------#
 	// DO NOT MODIFY THESE LINES
 	DrawShooter((width / 2) - 35, 0, bwidth, bheight);
