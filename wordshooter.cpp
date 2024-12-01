@@ -39,6 +39,7 @@ int byoffset = bradius;
 bool leftClicked = false, gameOver = false;
 int nxcells = (width - bradius) / (2 * bradius);
 int nycells = (height - byoffset /*- bradius*/) / (2 * bradius); 
+int xCell = 0, yCell = 0;
 int nfrows = 2; // initially number of full rows //
 int filledRows = nfrows;
 float score = 0;
@@ -46,7 +47,6 @@ int **board; // 2D-arrays for holding the data...
 int bwidth = 130;
 int bheight = 10;
 int bsx, bsy;
-int noOfRows = nfrows;
 const int nalphabets = 26;
 enum alphabets
 {
@@ -235,23 +235,8 @@ int GetAlphabet()
 }
 
 void Pixels2Cell(int px, int py, int & cx, int &cy) {
-	cx = ((px - bradius) / awidth) ;
-	cy = ((py - byoffset) / aheight);
-}
-
-// Fix defineBoard function
-void defineBoard(int ** &board) {
-    // Allocate rows first (nfrows = 2)
-    board = new int *[nfrows];
-    for (int i = 0; i < nfrows; i++) {
-        // Allocate columns (nxcells = 15)
-        board[i] = new int[nxcells];
-
-		// Fill the board with random alphabets
-        for (int j = 0; j < nxcells; j++) {
-            board[i][j] = GetAlphabet();
-        }
-    }
+	cx = (px / 60);
+	cy = ((height - py - 1 - 20) / 60) + 1;
 }
 
 void Cell2Pixels(int cx, int cy, int & px, int &py){
@@ -302,34 +287,50 @@ void DisplayFunction()
 	glClear(GL_COLOR_BUFFER_BIT);								 // Update the colors
 
 	// write your drawing commands here or call your drawing functions...
-	for (int i = 0; i < nfrows; i++)
+	for (int i = 0; i < 4; i++)
 	{
 		for (int j = 0; j < nxcells; j++)
 		{
-			DrawAlphabet((alphabets)board[i][j], (10 + (j * awidth)), (570 - (i * aheight)), awidth, aheight);
+			if (board[i][j] != -1)
+				DrawAlphabet((alphabets)board[i][j], (10 + (j * awidth)), (570 - (i * aheight)), awidth, aheight);
 		}
 	}
 
-	DrawAlphabet((alphabets)5, posX, posY, awidth, aheight);
+	DrawAlphabet((alphabets)currentChar, posX, posY, awidth, aheight);
+	DrawAlphabet((alphabets)nextChar, (width - (width / 8)), 10 , awidth, aheight);
+
 
 	if (leftClicked == true)
 	{
-		cout << "ClickPosX: " << clickPosX << " ClickPosY: " << clickPosY << " posX: " << posX << " PosY: " << posY << endl;
-
-		//dividing by FPS makes it so that the change in position is split up frame-by-frame to keep it smooth
-		posX = (posX + (clickPosX/FPS));
-		posY = (posY + (clickPosY/FPS));
-
-		//boundary checks, negating it makes it so that the ball bounces off the wall as the value being "added" changes direction (subtracting the change moves to left, adding the change moves to right, behavior must change at boundaries)
-		if ((posX <= 0) || (posX >= (width - 1 - 60)))
+		if (posY >= (height - 20 - (filledRows * 60)))
 		{
-			clickPosX = -(clickPosX);
+			leftClicked = false;
+			Pixels2Cell(posX, posY, xCell, yCell);
+			cout << "xCell: " << xCell << " yCell: " << yCell << endl;
+			board[yCell][xCell] = currentChar;
+			currentChar = nextChar;
+			nextChar = GetAlphabet();
+			posX = (width / 2);
+			posY = 10;
 		}
+		else
+		{
+			cout << "ClickPosX: " << clickPosX << " ClickPosY: " << clickPosY << " posX: " << posX << " PosY: " << posY << endl;
+
+			//dividing by FPS makes it so that the change in position is split up frame-by-frame to keep it smooth
+			posX = (posX + (clickPosX/FPS));
+			posY = (posY + (clickPosY/FPS));
+
+			//boundary checks, negating it makes it so that the ball bounces off the wall as the value being "added" changes direction (subtracting the change moves to left, adding the change moves to right, behavior must change at boundaries)
+			if ((posX <= 0) || (posX >= (width - 1 - 60)))
+				clickPosX = -(clickPosX);
+		}
+
 
 	}
 
 	DrawString(5, height - 20, width, height + 5, "Score " + Num2Str(score), colors[BLUE_VIOLET]);
-	DrawString(width / 2 - 55, height - 25, width, height, "Time Left:" + Num2Str(remainingTime) + " secs", colors[RED]);
+	DrawString((width / 2) - 85, height - 25, width, height, "Time Left:" + Num2Str(remainingTime) + " secs", colors[RED]);
 	DrawString(width - 225, height - 20, width, height + 5, "Aarab Malik 24i-2552", colors[BLUE_VIOLET]);
 			   
 
@@ -463,7 +464,34 @@ void Timer(int m)
 	glutTimerFunc(1000.0 / FPS, Timer, 0);
 }
 
-void deleteBoard(int ** &board) {
+void DefineBoard(int ** &board) {
+    
+    board = new int *[14];
+    for (int i = 0; i < 14; i++) {
+        
+        board[i] = new int[15];
+    }
+
+	for (int i = 0; i < nfrows; i++)
+	{
+        for (int j = 0; j < 15; j++) {
+            board[i][j] = GetAlphabet();
+        }
+	}
+
+	for (int i = nfrows; i < 14; i++)
+	{
+		for (int j = 0; j < 15; j++)
+		{
+			board[i][j] = -1;
+		}
+	}
+
+	currentChar = GetAlphabet();
+	nextChar = GetAlphabet();
+}
+
+void DeleteBoard(int ** &board) {
 	for (int i = 0; i < nfrows; i++) {
 		delete board[i];
 	}
@@ -496,8 +524,11 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < 5; ++i)
 		cout << " word " << i << " =" << dictionary[i] << endl;
 
+	cout << "nx cells: " << nxcells;
+
+
 	// Write your code here for filling the canvas with different Alphabets. You can use the Getalphabet function for getting the random alphabets
-	defineBoard(board);
+	DefineBoard(board);
 	InitMusic();
 
 	glutInit(&argc, argv);						  // initialize the graphics library...
@@ -528,7 +559,7 @@ int main(int argc, char *argv[])
     alDeleteSources(1, &source);
     alDeleteBuffers(1, &buffer);
     alutExit();
-	deleteBoard(board);
+	DeleteBoard(board);
 	return 1;
 }
 #endif /* */
