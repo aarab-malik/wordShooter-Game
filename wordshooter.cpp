@@ -36,7 +36,7 @@ int remainingTime = 120, framesDrawn = 0;
 int posX = (width / 2), posY = 10, cellPosX = 0, cellPosY = 0, checkPosX = 0, checkPosY = 0, checkCellX = 0, checkCellY = 0;
 int clickPosX = 0, clickPosY = 0;
 int byoffset = bradius;
-bool leftClicked = false, gameOver = false;
+bool leftClicked = false, gameOver = false, collidedAbove = false, collidedRight = false, collidedLeft = false;
 int nxcells = (width - bradius) / (2 * bradius);
 int nycells = (height - byoffset /*- bradius*/) / (2 * bradius); 
 int xCell = 0, yCell = 0;
@@ -229,22 +229,25 @@ void DrawAlphabet(const alphabets &cname, int sx, int sy, int cwidth = 60,
 
 	// glutSwapBuffers();
 }
+
 int GetAlphabet()
 {
 	return GetRandInRange(1, 26);
 }
 
-void Pixels2Cell(int px, int py, int & cx, int &cy) {
+void Pixels2Cell(int px, int py, int & cx, int &cy)
+{
 	cx = (px / 60);
 	cy = ((height - py - 1 - 20) / 60) + 1;
 }
 
-void Cell2Pixels(int cx, int cy, int & px, int &py){
+void Cell2Pixels(int cx, int cy, int & px, int &py)
+{
 	px = (cx * awidth);
 	py = (cy * aheight);
 }
-void DrawShooter(int sx, int sy, int cwidth = 60, int cheight = 60)
 
+void DrawShooter(int sx, int sy, int cwidth = 60, int cheight = 60)
 {
 	float fwidth = (float)cwidth / width * 2, fheight = (float)cheight / height * 2;
 	float fx = (float)sx / width * 2 - 1, fy = (float)sy / height * 2 - 1;
@@ -302,15 +305,49 @@ void DisplayFunction()
 		DrawAlphabet((alphabets)currentChar, posX, posY, awidth, aheight);
 		DrawAlphabet((alphabets)nextChar, (width - (width / 8)), 10 , awidth, aheight);
 
-
 		if (leftClicked == true)
 		{
 			Pixels2Cell(posX, posY, checkCellX, checkCellY);
 
 			if (board[checkCellY - 1][checkCellX] != -1)
+				collidedAbove = true;
+			else
+			{
+				collidedAbove = false;
+
+				if (checkCellX > 0 && board[checkCellY][checkCellX - 1] != -1)
+					collidedLeft = true;
+				else
+				{
+					collidedLeft = false;	
+
+					if ((checkCellX < nxcells - 1) && (board[checkCellY][checkCellX + 1] != -1))
+						collidedRight = true;
+					else
+						collidedRight = false;
+				}
+			}
+
+			if ((collidedAbove == true) || (collidedLeft == true) || (collidedRight == true))
 			{
 				leftClicked = false;
-				Pixels2Cell(posX, posY, xCell, yCell);
+
+				if (collidedAbove == true)
+        		{
+        		    xCell = checkCellX;
+        		    yCell = checkCellY;
+        		}
+        		else if (collidedLeft == true)
+        		{
+        		    xCell = checkCellX ;
+        		    yCell = checkCellY;
+        		}
+        		else if (collidedRight == true)
+        		{
+        		    xCell = checkCellX;
+        		    yCell = checkCellY;
+        		}
+				
 				cout << "xCell: " << xCell << " yCell: " << yCell << endl;
 				board[yCell][xCell] = currentChar;
 				currentChar = nextChar;
@@ -318,6 +355,7 @@ void DisplayFunction()
 				posX = (width / 2);
 				posY = 10;
 			}
+
 			else
 			{
 				cout << "ClickPosX: " << clickPosX << " ClickPosY: " << clickPosY << " posX: " << posX << " PosY: " << posY << endl;
@@ -483,17 +521,19 @@ void Timer(int m)
 	glutTimerFunc(1000.0 / FPS, Timer, 0);
 }
 
-void DefineBoard(int ** &board) {
+void DefineBoard(int ** &board)
+{
     
     board = new int *[14];
-    for (int i = 0; i < 14; i++) {
-        
+    for (int i = 0; i < 14; i++) 
+	{    
         board[i] = new int[15];
     }
 
 	for (int i = 0; i < nfrows; i++)
 	{
-        for (int j = 0; j < 15; j++) {
+        for (int j = 0; j < 15; j++) 
+		{
             board[i][j] = GetAlphabet();
         }
 	}
@@ -510,8 +550,10 @@ void DefineBoard(int ** &board) {
 	nextChar = GetAlphabet();
 }
 
-void DeleteBoard(int ** &board) {
-	for (int i = 0; i < nfrows; i++) {
+void DeleteBoard(int ** &board)
+{
+	for (int i = 0; i < nfrows; i++) 
+	{
 		delete board[i];
 	}
 	delete[] board;
@@ -527,6 +569,26 @@ void InitMusic() {
     alSourcei(source, AL_LOOPING, AL_TRUE);
     
     alSourcePlay(source);
+}
+
+void InitFile()
+{
+    fstream myFile;
+
+    myFile.open("BurstedWords.txt" , ios::out);
+
+    myFile.close();
+}
+
+void WriteInFile(string burstWord)
+{
+	fstream myFile;
+
+    myFile.open("BurstedWords.txt",ios::app);
+
+    myFile << burstWord << "\n";
+
+	myFile.close();
 }
 
 /*
