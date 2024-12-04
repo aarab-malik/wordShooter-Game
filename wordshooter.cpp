@@ -25,6 +25,7 @@ using namespace std;
 #define FPS 60
 
 string *dictionary;
+
 int dictionarysize = 369646;
 #define KEY_ESC 27 // A
 
@@ -308,20 +309,20 @@ void DisplayFunction()
 		if (leftClicked == true)
 		{
 			Pixels2Cell(posX, posY, checkCellX, checkCellY);
-
-			if (board[checkCellY - 1][checkCellX] != -1)
+			cout << "checkCellX: " << checkCellX << " checkCellY: " << checkCellY << endl;
+			if ((board[checkCellY - 1][checkCellX]) != -1)
 				collidedAbove = true;
 			else
 			{
 				collidedAbove = false;
 
-				if (checkCellX > 0 && board[checkCellY][checkCellX - 1] != -1)
+				if ((checkCellX > 0) && ((board[checkCellY][checkCellX - 1]) != -1))
 					collidedLeft = true;
 				else
 				{
 					collidedLeft = false;	
 
-					if ((checkCellX < nxcells - 1) && (board[checkCellY][checkCellX + 1] != -1))
+					if ((checkCellX < (nxcells - 1)) && ((board[checkCellY][checkCellX + 1]) != -1))
 						collidedRight = true;
 					else
 						collidedRight = false;
@@ -348,7 +349,6 @@ void DisplayFunction()
         		    yCell = checkCellY;
         		}
 				
-				cout << "xCell: " << xCell << " yCell: " << yCell << endl;
 				board[yCell][xCell] = currentChar;
 				currentChar = nextChar;
 				nextChar = GetAlphabet();
@@ -358,7 +358,6 @@ void DisplayFunction()
 
 			else
 			{
-				cout << "ClickPosX: " << clickPosX << " ClickPosY: " << clickPosY << " posX: " << posX << " PosY: " << posY << endl;
 
 				//dividing by FPS makes it so that the change in position is split up frame-by-frame to keep it smooth
 				posX = (posX + (clickPosX/FPS));
@@ -523,24 +522,24 @@ void Timer(int m)
 
 void DefineBoard(int ** &board)
 {
-    
-    board = new int *[14];
-    for (int i = 0; i < 14; i++) 
+    cout << "nycells: " << nycells << " nxcells: " << nxcells << endl;
+    board = new int *[nycells + 2];
+    for (int i = 0; i < (nycells + 2); i++) 
 	{    
-        board[i] = new int[15];
+        board[i] = new int[nxcells];
     }
 
 	for (int i = 0; i < nfrows; i++)
 	{
-        for (int j = 0; j < 15; j++) 
+        for (int j = 0; j < nxcells; j++) 
 		{
             board[i][j] = GetAlphabet();
         }
 	}
 
-	for (int i = nfrows; i < 14; i++)
+	for (int i = nfrows; i < (nycells + 2); i++)
 	{
-		for (int j = 0; j < 15; j++)
+		for (int j = 0; j < nxcells; j++)
 		{
 			board[i][j] = -1;
 		}
@@ -552,9 +551,9 @@ void DefineBoard(int ** &board)
 
 void DeleteBoard(int ** &board)
 {
-	for (int i = 0; i < nfrows; i++) 
+	for (int i = 0; i < (nycells + 2); i++) 
 	{
-		delete board[i];
+		delete[] board[i];
 	}
 	delete[] board;
 }
@@ -591,6 +590,62 @@ void WriteInFile(string burstWord)
 	myFile.close();
 }
 
+string longestWord = "";
+int longestWordStartIndex = 0, longestWordRowNum = 0;
+
+void SearchDictionary(string word, int startIndex, int rowNum)
+{
+	
+	for (int i = 0; i < dictionarysize; i++)
+	{  
+		if (dictionary[i] == word)
+		{
+			cout << "word is: " << word << endl;
+			if ((size(longestWord)) < (size(word)))
+			{
+				longestWord = word;
+				longestWordStartIndex = startIndex;
+				longestWordRowNum = rowNum;
+			}
+		}
+	}
+
+	if (size(longestWord) > 0)
+		cout << "Largest word is " << longestWord << "with start index: " << longestWordStartIndex << endl;
+}
+
+void BurstWords()
+{
+	fstream myFile;
+	string row, tempword;
+	
+	myFile.open("BurstedWords.txt", ios::out);
+
+	//controls the number of rows
+	for (int i = 0; i < (nycells + 1); i++)
+	{
+		//concatinates the i-th row of the board into the string row, added 97 to convert the alphabet denoted by a number into its ascii ('a' is represented by 0, adding 97 to that gives 97 which is ASCII of 'a')
+		for (int j = 0; j < nxcells; j++)
+			row[j] = ((board[i][j]) + 97);
+		
+		//l makes it iterate 15 times on account for each letter in the row
+		for (int l = 0; l < nxcells; l++)
+		{
+			//j determines till where the word will be made (e.g "hello", this loop controls h, he, hel, hell, hello)
+			for (int j = 1; j <= (nxcells - l); j++)
+			{
+				//resets the tempword
+				tempword = "";
+					//controls the starting index for the pattern (e.g "hello", this loop controls h, el, hell, hello then e, el, ell, ello then l, ll, llo etc)
+					for (int k = l; k < (j + l); k++)
+						tempword = tempword + row[k];		
+					
+					SearchDictionary(tempword, l, i);
+			}
+			cout << endl; 
+		}
+	}
+}
 /*
  * our gateway main function
  * */
@@ -605,11 +660,26 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < 5; ++i)
 		cout << " word " << i << " =" << dictionary[i] << endl;
 
-	cout << "nx cells: " << nxcells;
-
-
 	// Write your code here for filling the canvas with different Alphabets. You can use the Getalphabet function for getting the random alphabets
 	DefineBoard(board);
+
+	
+	board[0][0] = 18;
+	board[0][1] = 4;
+	board[0][2] = 11;
+	board[0][3] = 11;
+	board[0][4] = 14;
+	board[0][5] = 0;
+	board[0][6] = 7;
+	board[0][7] = 10;
+	board[0][8] = 19;
+	board[0][9] = 7;
+	board[0][10] = 4;
+	board[0][11] = 17;
+	board[0][12] = 4;
+	board[0][13] = 2;
+	board[0][14] = 9;
+	BurstWords();
 	InitMusic();
 
 	glutInit(&argc, argv);						  // initialize the graphics library...
@@ -641,6 +711,7 @@ int main(int argc, char *argv[])
     alDeleteBuffers(1, &buffer);
     alutExit();
 	DeleteBoard(board);
+	delete[] dictionary;
 	return 1;
 }
 #endif /* */
