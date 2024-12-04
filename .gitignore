@@ -3,3 +3,4 @@ word-shooter
 *.o
 .vscode/
 .vscode/settings.json
+BurstedWords.txt
