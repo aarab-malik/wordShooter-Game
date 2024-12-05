@@ -195,6 +195,12 @@ void RegisterTextures()
 	}
 	ifile.close();
 }
+
+int GetAlphabet()
+{
+	return GetRandInRange(1, 26);
+}
+
 void DrawAlphabet(const alphabets &cname, int sx, int sy, int cwidth = 60,
 				  int cheight = 60)
 /*Draws a specfic cookie at given position coordinate
@@ -231,10 +237,228 @@ void DrawAlphabet(const alphabets &cname, int sx, int sy, int cwidth = 60,
 	// glutSwapBuffers();
 }
 
-int GetAlphabet()
+void DefineBoard()
 {
-	return GetRandInRange(1, 26);
+    board = new int *[nycells + 3];
+    for (int i = 0; i < (nycells + 3); i++) 
+        board[i] = new int[nxcells];
+
+	for (int i = 0; i < nfrows; i++)
+	{
+        for (int j = 0; j < nxcells; j++) 
+            board[i][j] = GetAlphabet();
+	}
+
+	for (int i = nfrows; i < (nycells + 3); i++)
+	{
+		for (int j = 0; j < nxcells; j++)
+			board[i][j] = -1;
+	}
+
+	currentChar = GetAlphabet();
+	nextChar = GetAlphabet();
 }
+
+void DeleteBoard(int ** &board)
+{
+	for (int i = 0; i < (nycells + 2); i++) 
+		delete[] board[i];
+
+	delete[] board;
+}
+
+void InitMusic() 
+{
+	//initialize ALUT (openAL utility)
+    alutInit(0, NULL);
+    
+	//stores the music file into a buffer in the mmemory
+    buffer = alutCreateBufferFromFile("backgroundMusic.wav");
+    
+	//generates a source that the library can use, 1 means 1 source
+    alGenSources(1, &source);
+
+	//attaches the buffer to the source
+    alSourcei(source, AL_BUFFER, buffer);
+
+	//makes the source loop all the time
+    alSourcei(source, AL_LOOPING, AL_TRUE);
+    
+	//starts playign the source
+    alSourcePlay(source);
+}
+
+void InitFile()
+{
+	//clears whatever is written in the file
+    fstream myFile;
+
+    myFile.open("BurstedWords.txt" , ios::out);
+
+    myFile.close();
+}
+
+void WriteInFile(string burstWord)
+{
+	fstream myFile;
+
+    myFile.open("BurstedWords.txt",ios::app);
+
+    myFile << burstWord << "\n";
+
+	myFile.close();
+}
+
+int SizeOfWord(string word)
+{
+	int size = 0;
+	
+	for (size = 0; word[size] != '\0'; size++);
+
+	return size;
+}
+
+string longestWord = "";
+int longestWordStartIndex = 0, longestWordOtherIndex = 0;
+
+bool SearchDictionary(string word, int startIndex, int otherIndex)
+{
+	bool wasUpdated = false;
+	for (int i = 0; i < dictionarysize; i++)
+	{  
+		if (dictionary[i] == word)
+		{
+			if ((SizeOfWord(longestWord)) < (SizeOfWord(word)))
+			{
+				longestWord = word;
+				cout << "longest word is " << longestWord << " with startIndex: " << startIndex << " and otherIndex: " << otherIndex << " with length " << SizeOfWord(longestWord) << endl;
+				longestWordStartIndex = startIndex;
+				longestWordOtherIndex = otherIndex;
+				wasUpdated = true;
+			}
+		}
+	}		
+	return wasUpdated;
+}
+
+bool longestIsRow = false, longestIsColumn = false;
+
+void FindLargest()
+{
+	fstream myFile;
+	string letters, tempword;
+	char temp;
+	longestIsRow = false, longestIsColumn = false;
+
+
+	//controls the number of rows
+	for (int i = 0; i < (nycells + 1); i++)
+	{
+		letters = "";
+		//concatinates the i-th row of the board into the string row, added 97 to convert the alphabet denoted by a number into its ascii ('a' is represented by 0, adding 97 to that gives 97 which is ASCII of 'a')
+		for (int j = 0; j < nxcells; j++)
+		{	
+			temp = ((board[i][j]) + 97);
+			letters = (letters + temp);
+		}
+
+
+		//l makes it iterate the number of columns times on account for each letter in the row
+		for (int l = 0; l < nxcells; l++)
+		{
+			//j determines till where the word will be made (e.g "hello", this loop controls h, he, hel, hell, hello)
+			for (int j = 1; j <= (nxcells - l); j++)
+			{
+				//resets the tempword
+				tempword = "";
+					//controls the starting index for the pattern (e.g "hello", this loop controls h, el, hell, hello then e, el, ell, ello then l, ll, llo etc)
+					for (int k = l; k < (j + l); k++)
+						tempword = tempword + letters[k];		
+					
+					if (SearchDictionary(tempword, l, i) == true)
+						longestIsRow = true;
+
+			}
+		}
+	}
+
+	//controls the number of columns
+	for (int i = 0; i < nxcells; i++)
+	{
+		letters = "";
+		//concatinates the i-th column of the board into the string row, added 97 to convert the alphabet denoted by a number into its ascii ('a' is represented by 0, adding 97 to that gives 97 which is ASCII of 'a')
+		for (int j = 0; j < (nycells + 1); j++)
+		{	
+			temp = ((board[j][i]) + 97);
+			letters = (letters + temp);
+		}
+		
+		//l makes it iterate the number of rows times on account for each letter in the row
+		for (int l = 0; l < nycells; l++)
+		{
+			//j determines till where the word will be made (e.g "hello", this loop controls h, he, hel, hell, hello)
+			for (int j = 1; j <= (nycells - l); j++)
+			{
+				//resets the tempword
+				tempword = ""; 
+				int k = 0;
+					//controls the starting index for the pattern (e.g "hello", this loop controls h, el, hell, hello then e, el, ell, ello then l, ll, llo etc)
+					for (k = l; k < (j + l); k++)
+						tempword = tempword + letters[k];		
+		
+					if (SearchDictionary(tempword, l, i) == true)
+					{	
+						longestIsColumn = true;
+						longestIsRow = false;
+					}
+			}
+		}
+	}
+}
+
+void BurstWord()
+{
+	if ((SizeOfWord(longestWord)) > 0)
+		cout << "word being written in file: " << longestWord << endl;
+		WriteInFile(longestWord);
+		score = (score + SizeOfWord(longestWord));
+
+		if (longestIsRow == true)
+		{
+			cout << "longest is row " << endl;
+
+			for (int i = longestWordStartIndex; i < (longestWordStartIndex + (SizeOfWord(longestWord))); i++)
+				board[longestWordOtherIndex][i] = -1; 
+
+		}
+		else if (longestIsColumn == true)
+		{
+			cout << "longest is column " << endl;
+
+			for (int i = longestWordStartIndex; i < (longestWordStartIndex + (SizeOfWord(longestWord))); i++)
+				board[i][longestWordOtherIndex] = -1;
+		}
+
+		longestWord = "";
+		longestWordOtherIndex = 0;
+		longestWordStartIndex = 0;
+		longestIsColumn = false;
+		longestIsRow = false;
+}
+
+void RefillStartingRows()
+{
+	for (int i = 0; i < nfrows; i++)
+	{
+		for (int j = 0; j < nxcells; j++)
+		{
+			if (board[i][j] == -1)
+				board[i][j] = GetAlphabet(); 
+		}
+	}
+}
+
+
 
 void Pixels2Cell(int px, int py, int & cx, int &cy)
 {
@@ -307,7 +531,7 @@ void DisplayFunction()
 		DrawAlphabet((alphabets)nextChar, (width - (width / 8)), 10 , awidth, aheight);
 
 		if (leftClicked == true)
-		{
+		{	
 			Pixels2Cell(posX, posY, checkCellX, checkCellY);
 			if ((board[checkCellY - 1][checkCellX]) != -1)
 				collidedAbove = true;
@@ -315,16 +539,16 @@ void DisplayFunction()
 			{
 				collidedAbove = false;
 
-				if ((checkCellX > 0) && ((board[checkCellY][checkCellX - 1]) != -1))
-					collidedLeft = true;
+				if (((board[checkCellY][checkCellX - 1]) != -1) && ((board[checkCellY + 1][checkCellX]) != -1))
+					collidedRight = true;
 				else
 				{
-					collidedLeft = false;	
+					collidedRight = false;	
 
-					if ((checkCellX < (nxcells - 1)) && ((board[checkCellY][checkCellX + 1]) != -1))
-						collidedRight = true;
+					if (((board[checkCellY][checkCellX + 1]) != -1) && ((board[checkCellY + 1][checkCellX]) != -1))
+						collidedLeft = true;
 					else
-						collidedRight = false;
+						collidedLeft = false;
 				}
 			}
 
@@ -339,12 +563,12 @@ void DisplayFunction()
         		}
         		else if (collidedLeft == true)
         		{
-        		    xCell = checkCellX ;
+        		    xCell = checkCellX - 2;
         		    yCell = checkCellY;
         		}
         		else if (collidedRight == true)
         		{
-        		    xCell = checkCellX;
+        		    xCell = checkCellX + 1;
         		    yCell = checkCellY;
         		}
 				
@@ -353,6 +577,7 @@ void DisplayFunction()
 				nextChar = GetAlphabet();
 				posX = (width / 2);
 				posY = 10;
+				BurstWord();
 			}
 
 			else
@@ -492,6 +717,9 @@ void PrintableKeys(unsigned char key, int x, int y)
 	{
 		exit(1); // exit the program when escape key is pressed.
 	}
+
+	if ((key == 'E') || (key == 'e'))
+		gameOver = true;
 }
 
 /*
@@ -506,6 +734,7 @@ void Timer(int m)
 	if (gameOver == false)
 	{
 		framesDrawn++;
+		//checks if the number of frames drawn is equal to fps, if yes that means 1 second has passed
 		if ((framesDrawn % FPS) == 0)
 		{	
 			remainingTime--;
@@ -519,217 +748,6 @@ void Timer(int m)
 	glutTimerFunc(1000.0 / FPS, Timer, 0);
 }
 
-void DefineBoard(int ** &board)
-{
-    cout << "nycells: " << nycells << " nxcells: " << nxcells << endl;
-    board = new int *[nycells + 2];
-    for (int i = 0; i < (nycells + 2); i++) 
-	{    
-        board[i] = new int[nxcells];
-    }
-
-	for (int i = 0; i < nfrows; i++)
-	{
-        for (int j = 0; j < nxcells; j++) 
-		{
-            board[i][j] = GetAlphabet();
-        }
-	}
-
-	for (int i = nfrows; i < (nycells + 2); i++)
-	{
-		for (int j = 0; j < nxcells; j++)
-		{
-			board[i][j] = -1;
-		}
-	}
-
-	currentChar = GetAlphabet();
-	nextChar = GetAlphabet();
-}
-
-void DeleteBoard(int ** &board)
-{
-	for (int i = 0; i < (nycells + 2); i++) 
-	{
-		delete[] board[i];
-	}
-	delete[] board;
-}
-
-void InitMusic() {
-    alutInit(0, NULL);
-    
-    buffer = alutCreateBufferFromFile("backgroundMusic.wav");
-    
-    alGenSources(1, &source);
-    alSourcei(source, AL_BUFFER, buffer);
-    alSourcei(source, AL_LOOPING, AL_TRUE);
-    
-    alSourcePlay(source);
-}
-
-void InitFile()
-{
-	//clears whatever is written in the file
-    fstream myFile;
-
-    myFile.open("BurstedWords.txt" , ios::out);
-
-    myFile.close();
-}
-
-void WriteInFile(string burstWord)
-{
-	fstream myFile;
-
-    myFile.open("BurstedWords.txt",ios::app);
-
-    myFile << burstWord << "\n";
-
-	myFile.close();
-}
-
-string longestWord = "";
-int longestWordStartIndex = 0, longestWordOtherIndex = 0;
-
-bool SearchDictionary(string word, int startIndex, int otherIndex)
-{
-	bool wasUpdated = false;
-	for (int i = 0; i < dictionarysize; i++)
-	{  
-		if (dictionary[i] == word)
-		{
-			cout << "word is: " << word << endl;
-			if ((size(longestWord)) < (size(word)))
-			{
-				longestWord = word;
-				cout << "longest word is " << longestWord << " with startIndex: " << startIndex << " and otherIndex: " << otherIndex << endl;
-				longestWordStartIndex = startIndex;
-				longestWordOtherIndex = otherIndex;
-				wasUpdated = true;
-			}
-		}
-	}		
-	return wasUpdated;
-}
-
-bool longestIsRow = false, longestIsColumn = false;
-
-void FindLargest()
-{
-	fstream myFile;
-	string row, tempword;
-	char temp;
-	longestIsRow = false, longestIsColumn = false;
-	
-	myFile.open("BurstedWords.txt", ios::out);
-
-	//controls the number of rows
-	for (int i = 0; i < (nycells + 1); i++)
-	{
-		row = "";
-		//concatinates the i-th row of the board into the string row, added 97 to convert the alphabet denoted by a number into its ascii ('a' is represented by 0, adding 97 to that gives 97 which is ASCII of 'a')
-		for (int j = 0; j < nxcells; j++)
-		{	
-			temp = ((board[i][j]) + 97);
-			row = (row + temp);
-		}
-
-
-		//l makes it iterate the number of columns times on account for each letter in the row
-		for (int l = 0; l < nxcells; l++)
-		{
-			//j determines till where the word will be made (e.g "hello", this loop controls h, he, hel, hell, hello)
-			for (int j = 1; j <= (nxcells - l); j++)
-			{
-				//resets the tempword
-				tempword = "";
-					//controls the starting index for the pattern (e.g "hello", this loop controls h, el, hell, hello then e, el, ell, ello then l, ll, llo etc)
-					for (int k = l; k < (j + l); k++)
-						tempword = tempword + row[k];		
-					
-					if (SearchDictionary(tempword, l, i) == true)
-						longestIsRow = true;
-
-			}
-		}
-	}
-	//controls the number of columns
-	for (int i = 0; i < nxcells; i++)
-	{
-		row = "";
-		//concatinates the i-th column of the board into the string row, added 97 to convert the alphabet denoted by a number into its ascii ('a' is represented by 0, adding 97 to that gives 97 which is ASCII of 'a')
-		for (int j = 0; j < (nycells + 1); j++)
-		{	
-			temp = ((board[j][i]) + 97);
-			row = (row + temp);
-		}
-		
-		//l makes it iterate the number of rows times on account for each letter in the row
-		for (int l = 0; l < nycells; l++)
-		{
-			//j determines till where the word will be made (e.g "hello", this loop controls h, he, hel, hell, hello)
-			for (int j = 1; j <= (nycells - l); j++)
-			{
-				//resets the tempword
-				tempword = ""; 
-				int k = 0;
-					//controls the starting index for the pattern (e.g "hello", this loop controls h, el, hell, hello then e, el, ell, ello then l, ll, llo etc)
-					for (k = l; k < (j + l); k++)
-						tempword = tempword + row[k];		
-		
-					if (SearchDictionary(tempword, l, i) == true)
-					{	
-						longestIsColumn = true;
-						longestIsRow = false;
-					}
-			}
-		}
-	}
-}
-
-void BurstWord()
-{
-
-	if (longestIsRow == true)
-	{
-		cout << "longest is row \n";
-		WriteInFile(longestWord);
-		score = (score + size(longestWord));
-		
-		for (int i = longestWordStartIndex; i < (longestWordStartIndex + (size(longestWord))); i++)
-			board[longestWordOtherIndex][i] = -1; 
-
-	}
-	else if (longestIsColumn == true)
-	{
-		cout << "longest is column \n";
-		WriteInFile(longestWord);
-		score = (score + size(longestWord));
-
-		for (int i = longestWordStartIndex; i < (longestWordStartIndex + (size(longestWord))); i++)
-			board[i][longestWordOtherIndex] = -1;
-	}
-
-	longestWord = "";
-	longestWordOtherIndex = 0;
-	longestWordStartIndex = 0;
-	longestIsColumn = false;
-	longestIsRow = false;
-}
-
-void RefillStartingRows()
-{
-	for (int i = 0; i < nfrows; i++)
-	{
-		for (int j = 0; j < nxcells; j++)
-		{
-			if (board[i][j] == -1)
-				board[i][j] = GetAlphabet(); 
-		}
-	}
-}
 /*
  * our gateway main function
  * */
@@ -745,51 +763,62 @@ int main(int argc, char *argv[])
 		cout << " word " << i << " =" << dictionary[i] << endl;
 
 	// Write your code here for filling the canvas with different Alphabets. You can use the Getalphabet function for getting the random alphabets
-	DefineBoard(board);
+	DefineBoard();
+	InitFile();
 
-	board[0][0] = 18;
-    board[0][1] = 4;
-    board[0][2] = 11;
-    board[0][3] = 11;
-    board[0][4] = 14;
-    board[0][5] = 0;
-    board[0][6] = 7;
-    board[0][7] = 10;
-    board[0][8] = 19;
-    board[0][9] = 7;
-    board[0][10] = 4;
-    board[0][11] = 17;
-    board[0][12] = 4;
-    board[0][13] = 2;
-    board[0][14] = 9;
+	//SELLOAKTHERECJ
+	//HLOGICALFAALIIS
+	//E
+	//L
+	//L
+	//O
+	//H
+	//A
+	//A
+	//A
+	//board[0][0] = 18; 	
+    //board[0][1] = 4;
+    //board[0][2] = 11;
+    //board[0][3] = 11;
+    //board[0][4] = 14;
+    //board[0][5] = 0;
+    //board[0][6] = 7;
+    //board[0][7] = 10;
+    //board[0][8] = 19;
+    //board[0][9] = 7;
+    //board[0][10] = 4;
+    //board[0][11] = 17;
+    //board[0][12] = 4;
+    //board[0][13] = 2;
+    //board[0][14] = 9;
 
-	board[1][0] = 5;
-    board[1][1] = 11;
-    board[1][2] = 14;
-    board[1][3] = 6;
-    board[1][4] = 8;
-    board[1][5] = 2;
-    board[1][6] = 0;
-    board[1][7] = 11;
-    board[1][8] = 5;
-    board[1][9] = 0;
-    board[1][10] = 0;
-    board[1][11] = 11;
-    board[1][12] = 8;
-    board[1][13] = 8;
-    board[1][14] = 18;
+	//board[1][0] = 5;
+    //board[1][1] = 11;
+    //board[1][2] = 14;
+    //board[1][3] = 6;
+    //board[1][4] = 8;
+    //board[1][5] = 2;
+    //board[1][6] = 0;
+    //board[1][7] = 11;
+    //board[1][8] = 5;
+    //board[1][9] = 0;
+    //board[1][10] = 0;
+    //board[1][11] = 11;
+    //board[1][12] = 8;
+    //board[1][13] = 8;
+    //board[1][14] = 18;
 	
-	board[1][0] = 7;
-	board[2][0] = 4;
-	board[3][0] = 11;
-	board[4][0] = 11;
-	board[5][0] = 14;
-	board[6][0] = 7;
-	board[7][0] = 0;
-	board[8][0] = 0;
-	board[9][0] = 0;
+	//board[1][0] = 7;
+	//board[2][0] = 4;
+	//board[3][0] = 11;
+	//board[4][0] = 11;
+	//board[5][0] = 14;
+	//board[6][0] = 7;
+	//board[7][0] = 0;
+	//board[8][0] = 0;
+	//board[9][0] = 0;
 
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < 5; i++)
 	{	
 		FindLargest();
 		BurstWord();
